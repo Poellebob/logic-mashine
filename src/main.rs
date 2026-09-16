@@ -1,6 +1,6 @@
+mod app;
 mod core;
-mod ui;
 
 fn main() {
-    ui::editor::run();
+    app::editor::run();
 }
