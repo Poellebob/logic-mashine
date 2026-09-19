@@ -1,5 +1,7 @@
+#[derive(Default)]
 pub enum Gate {
     NOT,
+    #[default]
     AND,
     NAND,
     OR,
