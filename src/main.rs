@@ -1,6 +1,7 @@
-mod app;
 mod core;
+mod editor;
 
 fn main() {
-    app::editor::run();
+    let mut app = editor::App::init();
+    app.run();
 }
