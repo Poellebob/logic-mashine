@@ -1,18 +1,24 @@
 mod hud;
 mod plane;
+mod ui;
 
 use raylib::prelude::*;
 
 use crate::core::logic;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct State {
     gate: logic::Gate,
 }
 
 pub struct App {
-    pub state: State,
     pub camera: Camera2D,
+    state: State,
+    event_stack: Vec<Event>,
+}
+
+pub enum Event {
+    GATE_SELECT(logic::Gate),
 }
 
 impl App {
@@ -25,6 +31,7 @@ impl App {
                 rotation: 0.0,
                 zoom: 1.0,
             },
+            event_stack: Vec::new(),
         }
     }
 
@@ -43,6 +50,14 @@ impl App {
             plane::draw(&mut d, &self);
             hud::draw(&mut d, &self);
         }
+    }
+
+    pub fn event_add(&mut self, event_type: Event) {
+        self.event_stack.push(event_type);
+    }
+
+    pub fn get_state(&mut self) -> State {
+        self.state.clone()
     }
 
     fn update(&mut self, rl: &mut RaylibHandle) {
