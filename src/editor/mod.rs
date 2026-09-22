@@ -1,4 +1,7 @@
-use raylib::{ffi::*, prelude::*};
+mod hud;
+mod plane;
+
+use raylib::prelude::*;
 
 use crate::core::logic;
 
@@ -9,15 +12,20 @@ pub struct State {
 
 pub struct App {
     pub state: State,
-    pub camera: Vector2,
+    pub camera: Camera2D,
 }
 
 impl App {
     pub fn init() -> Self {
-        return App {
+        App {
             state: State::default(),
-            camera: Vector2::zero(),
-        };
+            camera: Camera2D {
+                offset: Vector2::zero(),
+                target: Vector2::zero(),
+                rotation: 0.0,
+                zoom: 1.0,
+            },
+        }
     }
 
     pub fn run(&mut self) {
@@ -26,22 +34,30 @@ impl App {
 
         rl.set_target_fps(60);
 
-        let mut text_loc = Vector2::new(40.0, 40.0);
-
         while !rl.window_should_close() {
-            if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-                text_loc = rl.get_mouse_position();
-            }
+            self.update(&mut rl);
 
             let mut d = rl.begin_drawing(&thread);
             d.clear_background(Color::WHITE);
-            d.draw_text(
-                "Hello, World!",
-                text_loc.x.round() as i32,
-                text_loc.y.round() as i32,
-                40,
-                Color::BLACK,
-            );
+
+            plane::draw(&mut d, &self);
+            hud::draw(&mut d, &self);
+        }
+    }
+
+    fn update(&mut self, rl: &mut RaylibHandle) {
+        // Camera zoom with scroll wheel
+        let scroll = rl.get_mouse_wheel_move();
+        if scroll != 0.0 {
+            self.camera.zoom *= if scroll > 0.0 { 1.1 } else { 0.9 };
+            self.camera.zoom = self.camera.zoom.clamp(0.1, 5.0);
+        }
+
+        // Camera pan with middle mouse button
+        if rl.is_mouse_button_down(MouseButton::MOUSE_BUTTON_MIDDLE) {
+            let delta = rl.get_mouse_delta();
+            self.camera.target.x -= delta.x / self.camera.zoom;
+            self.camera.target.y -= delta.y / self.camera.zoom;
         }
     }
 }
