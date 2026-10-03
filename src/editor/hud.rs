@@ -1,11 +1,15 @@
-use raylib::{ffi::CSSPalette, prelude::*};
+use raylib::prelude::*;
 
 use crate::editor;
-use crate::editor::ui;
+use crate::editor::ui::{Item, Rect};
 
 pub fn draw(d: &mut RaylibDrawHandle, app: &editor::App) {
     let screen_w = d.get_screen_width();
     let screen_h = d.get_screen_height();
 
-    let and_button = Rectangle::new(screen_w as f32 - 100.0, 0.0, 100.0, 100.0);
+    Rect::new()
+        .size(200.0, 200.0)
+        .position(100.0, 100.0)
+        .roundness(0.5)
+        .draw(d);
 }

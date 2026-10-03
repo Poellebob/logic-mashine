@@ -18,7 +18,7 @@ pub struct App {
 }
 
 pub enum Event {
-    GATE_SELECT(logic::Gate),
+    GateSelect(logic::Gate),
 }
 
 impl App {
