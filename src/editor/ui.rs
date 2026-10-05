@@ -27,6 +27,11 @@ pub trait HasRectangle {
     }
 }
 
+enum Corners {
+    Roundness(f32),
+    Radius(f32),
+}
+
 // properly unnecessary
 pub trait HasItem: HasRectangle {
     fn item_mut(&mut self) -> &mut Item;
@@ -35,8 +40,15 @@ pub trait HasItem: HasRectangle {
     where
         Self: Sized,
     {
-        let i = self.item_mut();
-        i.roundness = r;
+        self.item_mut().corners = Corners::Roundness(r);
+        self
+    }
+
+    fn radius(mut self, r: f32) -> Self
+    where
+        Self: Sized,
+    {
+        self.item_mut().corners = Corners::Radius(r);
         self
     }
 
@@ -44,27 +56,24 @@ pub trait HasItem: HasRectangle {
     where
         Self: Sized,
     {
-        let i = self.item_mut();
-        i.color = color;
+        self.item_mut().color = color;
         self
     }
 
-    fn draw(&mut self, d: &mut RaylibDrawHandle)
-    where
-        Self: Sized,
-    {
-        d.draw_rectangle_rounded(
-            *self.rectangle_mut(),
-            self.item_mut().roundness,
-            2,
-            self.item_mut().color,
-        )
+    fn draw(&mut self, d: &mut RaylibDrawHandle) {
+        let rect = *self.rectangle_mut();
+        let item = self.item_mut();
+        let roundness = match item.corners {
+            Corners::Roundness(r) => r,
+            Corners::Radius(r) => r / (rect.width.min(rect.height) / 2.0),
+        };
+        d.draw_rectangle_rounded(rect, roundness, 2, item.color);
     }
 }
 
 pub struct Item {
     rectangle: Rectangle,
-    roundness: f32,
+    corners: Corners,
     color: Color,
 }
 
@@ -84,19 +93,9 @@ impl Item {
     pub fn new() -> Self {
         Item {
             rectangle: Rectangle::default(),
-            roundness: 0.0,
+            corners: Corners::Roundness(0.0),
             color: Color::default(),
         }
-    }
-
-    pub fn roundness(mut self, r: f32) -> Self {
-        self.roundness = r;
-        self
-    }
-
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
-        self
     }
 }
 
@@ -106,8 +105,14 @@ pub struct Collumn {
     spaceing: f32,
 }
 
+impl HasRectangle for Collumn {
+    fn rectangle_mut(&mut self) -> &mut Rectangle {
+        &mut self.rectangle
+    }
+}
+
 impl Collumn {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Collumn {
             children: vec![],
             rectangle: Rectangle::default(),
@@ -115,12 +120,17 @@ impl Collumn {
         }
     }
 
-    fn child(mut self, child: impl HasItem + 'static) -> Self {
+    pub fn spaceing(mut self, space: f32) -> Self {
+        self.spaceing = space;
+        self
+    }
+
+    pub fn child(mut self, child: impl HasItem + 'static) -> Self {
         self.children.push(Box::new(child));
         self
     }
 
-    fn draw(&mut self, d: &mut RaylibDrawHandle) {
+    pub fn draw(&mut self, d: &mut RaylibDrawHandle) {
         if self.children.len() == 0 {
             return;
         };
@@ -128,14 +138,14 @@ impl Collumn {
         let mut positioner: f32 = 0.0;
 
         for child in &mut self.children {
-            let mut child_rec = *child.rectangle_mut();
+            let r = child.rectangle_mut();
 
-            child_rec.x = self.rectangle.x;
-            child_rec.y = self.rectangle.y + positioner;
+            r.x = self.rectangle.x;
+            r.y = self.rectangle.y + positioner;
 
-            positioner += child_rec.height + self.spaceing;
+            positioner += r.height + self.spaceing;
 
-            d.draw_rectangle_lines_ex(child_rec, 2.0, child.item_mut().color);
+            child.draw(d)
         }
     }
 }
